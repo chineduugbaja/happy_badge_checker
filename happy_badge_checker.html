@@ -1,0 +1,110 @@
+<input type="file" id="badgeUpload" accept="image/png">
+<p id="validationMessage"></p>
+
+<script>
+
+    /*
+    We want users to upload a badge: an avatar within a circle.
+    Create a function taking a png as input and verifying that:
+    - Size = 512x512
+    - The only non-transparent pixels are within a circle.
+    - The colors of the badge give a "happy" feeling.
+    Additionally, you can create a parallel function that converts the given image (of any format) 
+    into the specified object. You can work with any language, and send a GitHub link
+    */
+    document.addEventListener("DOMContentLoaded", function () {
+        const badgeUpload = document.getElementById("badgeUpload");
+        const validationMessage = document.getElementById("validationMessage");
+
+        badgeUpload.addEventListener("change", handleBadgeUpload);
+
+        function handleBadgeUpload(event) {
+            const file = event.target.files[0];
+
+            if (!file) {
+                validationMessage.textContent = "Please select a valid PNG image.";
+                return;
+            }
+
+            const image = new Image();
+
+            image.onload = function () {
+
+
+                if (image.width === 512 && image.height === 512) {
+                    const canvas = document.createElement("canvas");
+                    canvas.width = image.width;
+                    canvas.height = image.height;
+                    const ctx = canvas.getContext("2d");
+                    ctx.drawImage(image, 0, 0, image.width, image.height);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imageData.data;
+
+                    const centerX = canvas.width / 2;
+                    const centerY = canvas.height / 2;
+                    const radius = canvas.width / 2;
+
+                    let isCircle = true;
+                    let hasHappyColors = true;
+
+                    let happyColors = 0;
+                    let unhappyColors = 0;
+
+                    for (let x = 0; x < canvas.width; x++) {
+                        for (let y = 0; y < canvas.height; y++) {
+                            const distanceToCenter = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+                            const alpha = data[(y * canvas.width + x) * 4 + 3];
+
+                            // Check if the pixel is outside the circle
+                            if (distanceToCenter > radius && alpha !== 0) {
+                                isCircle = false;
+                                break;
+                            }
+
+                            // Check if the colors are "happy" (you can define your own criteria here)
+                            const red = data[(y * canvas.width + x) * 4];
+                            const green = data[(y * canvas.width + x) * 4 + 1];
+                            const blue = data[(y * canvas.width + x) * 4 + 2];
+
+
+                            if (red == 0 && green == 0 && blue == 0) {
+                                continue;
+                            }
+
+                            // Example: Check if the color is predominantly bright and colorful
+                            if (red + green + blue < 255) {
+                                hasHappyColors = false;
+                                unhappyColors++;
+                                continue;
+                            }
+
+                            happyColors++;
+                        }
+                    }
+
+
+                    console.log("Happy colors: " + happyColors);
+                    console.log("Unhappy colors: " + unhappyColors);
+
+                    const percentage = (happyColors / (happyColors + unhappyColors)) * 100;
+                    console.log("Percentage of Happy to unhappy: " + percentage + "%")
+                    if (percentage > 70) { // percentage of happy colors. This can be modified to suite your needs
+                        hasHappyColors = true
+                    }
+
+                    if (isCircle && hasHappyColors) {
+                        validationMessage.textContent = "Badge is valid!";
+                    } else {
+                        validationMessage.innerHTML = "<p>Badge does not meet the criteria. </p><p>IsWithinCircle: " + isCircle + "<br>HasHappyColors: " + hasHappyColors + "</p>";
+                    }
+                } else {
+                    validationMessage.textContent = "Badge should be 512x512 pixels.";
+                }
+            };
+
+            image.src = URL.createObjectURL(file);
+        }
+    });
+
+</script>
